@@ -1,0 +1,7 @@
+import { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import colors from '../theme/colors';
+import { Screen, Card } from '../components/Layout';
+import { Button, Input } from '../components/Fields';
+import { useApp } from '../context/AppContext';
+export default function DonationsScreen(){ const {donate}=useApp(); const [type,setType]=useState('Pix'); const [value,setValue]=useState(''); return <Screen title="Doações"><Card><Text style={{fontSize:20,fontWeight:'900'}}>Apoie o esporte</Text><Text style={{color:colors.muted,lineHeight:24,marginVertical:10}}>Sua doação ajuda atletas com materiais, eventos, alimentação, transporte e estrutura esportiva.</Text><View style={{flexDirection:'row',gap:8,marginVertical:10}}>{['Pix','Material esportivo','Alimentos','Outro'].map(t=><Pressable key={t} onPress={()=>setType(t)} style={{padding:10,borderRadius:999,backgroundColor:type===t?colors.primary:'#fff',borderWidth:1,borderColor:colors.border}}><Text style={{color:type===t?'#fff':colors.text,fontWeight:'900'}}>{t}</Text></Pressable>)}</View><Input label={type==='Pix'?'Valor da doação':'Descrição da doação'} value={value} onChangeText={setValue}/><Button title="Registrar interesse de doação" onPress={()=>donate(value,type)}/><Text style={{color:colors.muted,fontSize:12,marginTop:12}}>Em produção, conectaremos Pix copia e cola, Mercado Pago ou Stripe.</Text></Card></Screen> }

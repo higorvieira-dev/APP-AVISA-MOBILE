@@ -1,0 +1,7 @@
+import { Alert, Text } from 'react-native';
+import { useState } from 'react';
+import colors from '../theme/colors';
+import { Screen, Card, Pill } from '../components/Layout';
+import { Button, Input } from '../components/Fields';
+import { useApp } from '../context/AppContext';
+export default function TransparencyScreen(){ const {transparencies,canAccessDirectorate,addTransparency}=useApp(); const [title,setTitle]=useState(''); const [body,setBody]=useState(''); function submit(){ if(!title||!body)return Alert.alert('Preencha os campos'); addTransparency(title,body); setTitle(''); setBody(''); } return <Screen title="Canal de Transparência">{canAccessDirectorate?<Card><Text style={{fontSize:18,fontWeight:'900',marginBottom:12}}>Publicar informação oficial</Text><Input label="Título" value={title} onChangeText={setTitle}/><Input label="Informação" value={body} onChangeText={setBody}/><Button title="Publicar no canal" onPress={submit}/></Card>:<Text style={{color:colors.muted,marginBottom:18}}>Somente diretoria, gerente e supervisor podem publicar. Todos os usuários podem visualizar.</Text>}{transparencies.map(t=><Card key={t.id}><Pill>{t.date}</Pill><Text style={{fontSize:20,fontWeight:'900',marginTop:10}}>{t.title}</Text><Text style={{color:colors.muted,lineHeight:24,marginTop:8}}>{t.body}</Text><Text style={{color:colors.primary,fontWeight:'900',marginTop:10}}>Publicado por {t.author}</Text></Card>)}</Screen> }

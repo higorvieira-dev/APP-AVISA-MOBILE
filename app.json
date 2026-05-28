@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "AvisaAPP Mobile",
+    "slug": "avisaapp-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#F3F5F9"
+      }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0f4808e2-99dd-458c-aabc-853bf3234fef"
+      }
+    }
+  }
+}
