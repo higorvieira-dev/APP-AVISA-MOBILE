@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # APPAVISA Mobile v5
 
 Versão funcional com:
@@ -26,3 +27,6 @@ Diretor:
 npm install
 npx expo start -c
 ```
+=======
+# APP-AVISA-MOBILE
+>>>>>>> 4e018a6cc8049fcd72a80345f63122aff9a3794a
