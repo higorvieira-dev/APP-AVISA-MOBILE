@@ -4,6 +4,7 @@ import React, { createContext, useContext, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { UserRole } from "../navigation/types";
 
+
 type User = {
   id: string;
   name: string;

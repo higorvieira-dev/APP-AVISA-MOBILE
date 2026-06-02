@@ -73,10 +73,10 @@ export default function ProfileScreen({ navigation }: Props) {
       </Card>
 
       <View style={styles.quickActions}>
+        <Button title="Meus Treinos" variant="secondary" onPress={() => navigation.navigate('MyTrainings')} />
         <Button title="Ranking" variant="secondary" onPress={() => navigation.navigate('Ranking')} />
         <Button title="Minhas Coins" variant="secondary" onPress={() => navigation.navigate('CoinHistory')} />
       </View>
-
       <Button title={editing ? 'Cancelar edição' : 'Editar perfil'} variant="secondary" onPress={() => setEditing(v => !v)} />
       {editing ? (
         <Card>

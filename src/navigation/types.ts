@@ -27,6 +27,7 @@ export type RootStackParamList = {
   Ranking: undefined;
   CoinHistory: undefined;
   AcademyQRCode: undefined;
+  MyTrainings: undefined;
 };
 
 export type MainTabParamList = {
