@@ -14,12 +14,16 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F3F5F9"
-      }
+      },
+      "package": "com.higorvieira67.avisaappmobile"
     },
     "extra": {
       "eas": {
         "projectId": "0f4808e2-99dd-458c-aabc-853bf3234fef"
       }
-    }
+    },
+    "plugins": [
+      "expo-barcode-scanner"
+    ]
   }
 }

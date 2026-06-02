@@ -14,10 +14,18 @@ export default function LoginScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  function handleLogin() {
-    if (!email || !password) return Alert.alert('Campos obrigatórios', 'Digite e-mail e senha.');
-    if (login(email, password)) navigation.replace('MainTabs');
+  async function handleLogin() {
+  if (!email || !password) {
+    Alert.alert("Campos obrigatórios", "Digite e-mail e senha.");
+    return;
   }
+
+  const ok = await login(email, password);
+
+  if (ok) {
+    navigation.replace("MainTabs");
+  }
+}
 
   return (
     <View style={styles.container}>

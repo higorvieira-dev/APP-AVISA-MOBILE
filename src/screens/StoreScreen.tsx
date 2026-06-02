@@ -20,23 +20,61 @@ export default function StoreScreen() {
   const [stock, setStock] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('gift');
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [redeemingId, setRedeemingId] = useState<string | null>(null);
 
   const filtered = useMemo(
     () => products.filter(i => (cat === 'Todos' || i.category === cat) && i.title.toLowerCase().includes(q.toLowerCase())),
     [q, cat, products]
   );
 
-  function saveProduct() {
-    if (!title || !price || !stock) return Alert.alert('Campos obrigatórios', 'Informe nome, valor em coins e estoque.');
-    addProduct({
-      title,
-      category,
-      price: Number(price),
-      stock: Number(stock),
-      description: description || 'Retirada no balcão da loja mediante voucher.',
-      icon,
-    });
-    setTitle(''); setPrice(''); setStock(''); setDescription(''); setIcon('gift'); setShowForm(false);
+  async function saveProduct() {
+    const cleanTitle = title.trim();
+    const cleanPrice = Number(price);
+    const cleanStock = Number(stock);
+
+    if (!cleanTitle || !price || !stock) {
+      return Alert.alert('Campos obrigatórios', 'Informe nome, valor em coins e estoque.');
+    }
+
+    if (Number.isNaN(cleanPrice) || cleanPrice < 0) {
+      return Alert.alert('Valor inválido', 'Informe um valor em coins válido.');
+    }
+
+    if (Number.isNaN(cleanStock) || cleanStock < 0) {
+      return Alert.alert('Estoque inválido', 'Informe um estoque válido.');
+    }
+
+    try {
+      setSavingProduct(true);
+
+      await addProduct({
+        title: cleanTitle,
+        category: category.trim() || 'Premium',
+        price: cleanPrice,
+        stock: cleanStock,
+        description: description.trim() || 'Retirada no balcão da loja mediante voucher.',
+        icon,
+      });
+
+      setTitle('');
+      setPrice('');
+      setStock('');
+      setDescription('');
+      setIcon('gift');
+      setShowForm(false);
+    } finally {
+      setSavingProduct(false);
+    }
+  }
+
+  async function handleRedeem(productId: string) {
+    try {
+      setRedeemingId(productId);
+      await redeemItem(productId);
+    } finally {
+      setRedeemingId(null);
+    }
   }
 
   return (
@@ -65,7 +103,7 @@ export default function StoreScreen() {
                   </Pressable>
                 ))}
               </View>
-              <Button title="Salvar produto" onPress={saveProduct} />
+              <Button title={savingProduct ? "Salvando..." : "Salvar produto"} onPress={saveProduct} />
             </View>
           ) : null}
         </Card>
@@ -96,7 +134,7 @@ export default function StoreScreen() {
               <Text style={styles.stock}>Estoque: {i.stock}</Text>
             </View>
           </View>
-          <Button title="Resgatar e gerar voucher" onPress={() => redeemItem(i.id)} />
+          <Button title={redeemingId === i.id ? "Gerando voucher..." : "Resgatar e gerar voucher"} onPress={() => handleRedeem(i.id)} />
         </Card>
       ))}
     </Screen>

@@ -26,7 +26,11 @@ import MeetingSuggestionScreen from '../screens/MeetingSuggestionScreen';
 import AdminFilesScreen from '../screens/AdminFilesScreen';
 import InviteScreen from '../screens/InviteScreen';
 import CouponManagerScreen from '../screens/CouponManagerScreen';
-
+import DirectorVouchersScreen from '../screens/DirectorVouchersScreen';
+import DirectorRequestsScreen from '../screens/DirectorRequestsScreen';
+import RankingScreen from '../screens/RankingScreen';
+import CoinHistoryScreen from '../screens/CoinHistoryScreen';
+import AcademyQRCodeScreen from '../screens/AcademyQRCodeScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -79,6 +83,11 @@ export default function AppNavigator() {
         <Stack.Screen name="AdminFiles" component={AdminFilesScreen} />
         <Stack.Screen name="Invite" component={InviteScreen} />
         <Stack.Screen name="CouponManager" component={CouponManagerScreen} />
+        <Stack.Screen name="DirectorVouchers" component={DirectorVouchersScreen} />
+        <Stack.Screen name="DirectorRequests" component={DirectorRequestsScreen} />
+        <Stack.Screen name="CoinHistory" component={CoinHistoryScreen}/>
+        <Stack.Screen name="Ranking" component={RankingScreen}/>
+        <Stack.Screen name="AcademyQRCode" component={AcademyQRCodeScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

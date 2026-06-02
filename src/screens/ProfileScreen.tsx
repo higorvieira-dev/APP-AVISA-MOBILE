@@ -46,9 +46,12 @@ export default function ProfileScreen({ navigation }: Props) {
     if (!res.canceled) updateProfile({ profileImage: res.assets[0].uri });
   }
 
-  function save() {
+  async function save() {
     if (!form.name || !form.email || !form.password) return Alert.alert('Campos obrigatórios', 'Nome, e-mail e senha são obrigatórios.');
-    updateProfile({ ...form, modality: form.modality || form.sport });
+      await updateProfile({
+        ...form,
+        modality: form.modality || form.sport,
+      });
     setEditing(false);
   }
 
@@ -68,6 +71,11 @@ export default function ProfileScreen({ navigation }: Props) {
           <View style={styles.stat}><Text style={styles.statNumber}>{myPosts.length}</Text><Text style={styles.statLabel}>Fotos</Text></View>
         </View>
       </Card>
+
+      <View style={styles.quickActions}>
+        <Button title="Ranking" variant="secondary" onPress={() => navigation.navigate('Ranking')} />
+        <Button title="Minhas Coins" variant="secondary" onPress={() => navigation.navigate('CoinHistory')} />
+      </View>
 
       <Button title={editing ? 'Cancelar edição' : 'Editar perfil'} variant="secondary" onPress={() => setEditing(v => !v)} />
       {editing ? (
@@ -130,6 +138,7 @@ const styles = StyleSheet.create({
   stat: { backgroundColor: colors.background, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center' },
   statNumber: { fontSize: 18, fontWeight: '900', color: colors.text },
   statLabel: { color: colors.muted, fontSize: 12, fontWeight: '800' },
+  quickActions: { gap: 10, marginBottom: 8 },
   section: { fontSize: 20, fontWeight: '900', marginVertical: 16 },
   formTitle: { fontSize: 16, fontWeight: '900', color: colors.text, marginTop: 10, marginBottom: 10 },
   galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },

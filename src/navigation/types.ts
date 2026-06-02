@@ -22,6 +22,11 @@ export type RootStackParamList = {
   AdminFiles: undefined;
   Invite: undefined;
   CouponManager: undefined;
+  DirectorVouchers: undefined;
+  DirectorRequests: undefined;
+  Ranking: undefined;
+  CoinHistory: undefined;
+  AcademyQRCode: undefined;
 };
 
 export type MainTabParamList = {
