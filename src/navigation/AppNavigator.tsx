@@ -31,6 +31,7 @@ import DirectorRequestsScreen from '../screens/DirectorRequestsScreen';
 import RankingScreen from '../screens/RankingScreen';
 import CoinHistoryScreen from '../screens/CoinHistoryScreen';
 import AcademyQRCodeScreen from '../screens/AcademyQRCodeScreen';
+import MyTrainingsScreen from "../screens/MyTrainingsScreen";
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -88,6 +89,7 @@ export default function AppNavigator() {
         <Stack.Screen name="CoinHistory" component={CoinHistoryScreen}/>
         <Stack.Screen name="Ranking" component={RankingScreen}/>
         <Stack.Screen name="AcademyQRCode" component={AcademyQRCodeScreen}/>
+        <Stack.Screen name="MyTrainings" component={MyTrainingsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
