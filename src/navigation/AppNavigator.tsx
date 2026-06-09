@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '../theme/colors';
 import { MainTabParamList, RootStackParamList } from './types';
+import WelcomeScreen from "../screens/WelcomeScreen";
 import LoginScreen from '../screens/LoginScreen';
 import AthleteRegisterScreen from '../screens/AthleteRegisterScreen';
 import PanelScreen from '../screens/PanelScreen';
@@ -62,7 +63,7 @@ function MainTabs() {
 export default function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="AthleteRegister" component={AthleteRegisterScreen} />
         <Stack.Screen name="MainTabs" component={MainTabs} />
@@ -90,6 +91,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Ranking" component={RankingScreen}/>
         <Stack.Screen name="AcademyQRCode" component={AcademyQRCodeScreen}/>
         <Stack.Screen name="MyTrainings" component={MyTrainingsScreen} />
+        
       </Stack.Navigator>
     </NavigationContainer>
   );

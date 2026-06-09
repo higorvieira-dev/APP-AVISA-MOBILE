@@ -1,6 +1,7 @@
 export type UserRole = 'athlete' | 'director' | 'manager' | 'supervisor' | 'coach' | 'admin';
 
 export type RootStackParamList = {
+  Welcome: undefined
   Login: undefined;
   AthleteRegister: undefined;
   MainTabs: undefined;
@@ -28,6 +29,7 @@ export type RootStackParamList = {
   CoinHistory: undefined;
   AcademyQRCode: undefined;
   MyTrainings: undefined;
+
 };
 
 export type MainTabParamList = {
