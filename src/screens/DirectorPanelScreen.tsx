@@ -12,6 +12,10 @@ const strategyActions = [
   ['Transparência', 'shield-checkmark', '#FFEDD5', colors.orange, 'Transparency'],
   ['Galeria', 'images', '#CCFBF1', '#0F766E', 'Gallery'],
   ['Cupons\nLoja', 'pricetag', '#FEF3C7', '#D97706', 'CouponManager'],
+  ['Voucher', 'ticket', '#E0F2FE', colors.primary, 'DirectorVouchers'],
+  ['Gerar\nQR', 'qr-code', '#ECFDF5', colors.green, 'AcademyQRCode'],
+  ['Aprovar\nMateriais', 'clipboard', '#FFF7ED', colors.orange, 'DirectorRequests'],
+  ['Agenda\nProfessor', 'calendar', '#EEF2FF', colors.purple, 'Agenda'],
 ] as const;
 
 export default function DirectorPanelScreen({ navigation }: { navigation: any }) {
@@ -81,9 +85,16 @@ export default function DirectorPanelScreen({ navigation }: { navigation: any })
       <Text style={styles.sectionTitle}>Cadastros Protegidos</Text>
       <View style={styles.registerGrid}>
         {protectedRegisters.map(([label, type]) => (
-          <Pressable key={label} style={styles.registerCard} onPress={() => navigation.navigate('ProtectedRegister', { type })}>
-            <Ionicons name="person-add" size={26} color={colors.primary} />
+          <Pressable
+            key={label}
+            style={styles.registerCard}
+            onPress={() => navigation.navigate('ProtectedRegister', { type })}
+          >
+            <View style={styles.registerIcon}>
+              <Ionicons name="person-add" size={25} color={colors.primary} />
+            </View>
             <Text style={styles.registerText}>{label}</Text>
+            <Text style={styles.registerSub}>Criar acesso</Text>
           </Pressable>
         ))}
       </View>
@@ -99,10 +110,6 @@ export default function DirectorPanelScreen({ navigation }: { navigation: any })
       </View>
 
       <Text style={styles.sectionTitle}>Avisos & Notificações</Text>
-      <Card style={styles.urgentNotice}>
-        <Ionicons name="alert" size={24} color={colors.red} />
-        <View style={{ flex: 1 }}><Text style={styles.noticeTitle}>Reunião Extraordinária</Text><Text style={styles.noticeSub}>Sexta-feira, 14:00 - Pauta: Orçamento 2024.</Text></View>
-      </Card>
       <Card style={styles.infoNotice}>
         <Ionicons name="information-circle" size={24} color={colors.primary} />
         <View style={{ flex: 1 }}><Text style={styles.noticeTitle}>Novo documento disponível</Text><Text style={styles.noticeSub}>O relatório mensal foi compartilhado pelo administrativo.</Text></View>
@@ -159,8 +166,10 @@ const styles = StyleSheet.create({
   darkMetric: { backgroundColor: '#0B1320', borderColor: '#0B1320' },
   statement: { color: colors.primary, fontWeight: '800', marginTop: 8 },
   registerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
-  registerCard: { width: '31%', backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, borderRadius: 20, padding: 13, minHeight: 108, alignItems: 'center', justifyContent: 'center' },
-  registerText: { textAlign: 'center', color: colors.text, fontSize: 12, fontWeight: '900', marginTop: 8 },
+  registerCard: { width: '31%', backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 14, minHeight: 132, alignItems: 'center', justifyContent: 'center' },
+  registerIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#EAF5FF', alignItems: 'center', justifyContent: 'center', marginBottom: 9 },
+  registerText: { textAlign: 'center', color: colors.text, fontSize: 12, fontWeight: '900', lineHeight: 16 },
+  registerSub: { textAlign: 'center', color: colors.primary, fontSize: 10, fontWeight: '800', marginTop: 5 },
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
   actionBox: { width: '31%', minHeight: 116, backgroundColor: '#fff', borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', padding: 10 },
   actionIcon: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },

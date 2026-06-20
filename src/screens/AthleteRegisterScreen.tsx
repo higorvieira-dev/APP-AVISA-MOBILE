@@ -1,5 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Text } from 'react-native';
 import { useState } from 'react';
 import { RootStackParamList } from '../navigation/types';
 import { Screen, Card } from '../components/Layout';
@@ -8,19 +8,79 @@ import colors from '../theme/colors';
 import { useApp } from '../context/AppContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AthleteRegister'>;
+
+function formatDateToPostgres(value: string) {
+  const clean = value.trim().replace(/\//g, '-');
+
+  if (!clean) {
+    return undefined;
+  }
+
+  const parts = clean.split('-');
+
+  if (parts.length !== 3) {
+    return undefined;
+  }
+
+  const [day, month, year] = parts;
+
+  if (!day || !month || !year || year.length !== 4) {
+    return undefined;
+  }
+
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
+
 export default function AthleteRegisterScreen({ navigation }: Props) {
   const { registerAthlete } = useApp();
-  const [form, setForm] = useState({ name: '', birth: '', cpf: '', gender: '', cep: '', address: '', number: '', complement: '', district: '', city: '', state: '', phone: '', email: '', sport: '', level: '', team: '', password: '' });
-  const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
-  function submit() {
-    if (!form.name || !form.email || !form.password) return Alert.alert('Campos obrigatórios', 'Nome, e-mail e senha são obrigatórios.');
-    registerAthlete({
+
+  const [form, setForm] = useState({
+    name: '',
+    birth: '',
+    cpf: '',
+    gender: '',
+    cep: '',
+    address: '',
+    number: '',
+    complement: '',
+    district: '',
+    city: '',
+    state: '',
+    phone: '',
+    email: '',
+    sport: '',
+    level: '',
+    team: '',
+    password: '',
+  });
+
+  const set = (k: string, v: string) =>
+    setForm((prev) => ({ ...prev, [k]: v }));
+
+  async function submit() {
+    if (!form.name || !form.email || !form.password) {
+      return Alert.alert(
+        'Campos obrigatórios',
+        'Nome, e-mail e senha são obrigatórios.'
+      );
+    }
+
+    const birthFormatted = formatDateToPostgres(form.birth);
+
+    if (form.birth && !birthFormatted) {
+      return Alert.alert(
+        'Data inválida',
+        'Digite a data de nascimento no formato DD-MM-AAAA ou DD/MM/AAAA.'
+      );
+    }
+
+    await registerAthlete({
       name: form.name,
       email: form.email,
       password: form.password,
       phone: form.phone,
       modality: form.sport,
-      birth: form.birth,
+      birth: birthFormatted,
       cpf: form.cpf,
       gender: form.gender,
       cep: form.cep,
@@ -34,26 +94,77 @@ export default function AthleteRegisterScreen({ navigation }: Props) {
       level: form.level,
       team: form.team,
     });
+
     navigation.goBack();
   }
+
   return (
     <Screen title="Cadastro de Atleta">
-      <Text style={{ color: colors.muted, marginBottom: 18 }}>Tela nativa, sem imagem fixa, seguindo os campos do layout enviado.</Text>
-      <Card><Text style={{ fontWeight: '900', fontSize: 18, marginBottom: 14 }}>Informações pessoais</Text>
-        <Input label="Nome completo" value={form.name} onChangeText={(v:string)=>set('name',v)} />
-        <Input label="Data de nascimento" value={form.birth} onChangeText={(v:string)=>set('birth',v)} />
-        <Input label="CPF" value={form.cpf} onChangeText={(v:string)=>set('cpf',v)} />
-        <Input label="Gênero" value={form.gender} onChangeText={(v:string)=>set('gender',v)} />
+      <Text style={{ color: colors.muted, marginBottom: 18 }}>
+        Tela nativa, sem imagem fixa, seguindo os campos do layout enviado.
+      </Text>
+
+      <Card>
+        <Text style={{ fontWeight: '900', fontSize: 18, marginBottom: 14 }}>
+          Informações pessoais
+        </Text>
+        <Input label="Nome completo" value={form.name} onChangeText={(v: string) => set('name', v)} />
+        <Input label="Data de nascimento" value={form.birth} onChangeText={(v: string) => set('birth', v)} />
+        <Input label="CPF" value={form.cpf} onChangeText={(v: string) => set('cpf', v)} />
+        <Input label="Gênero" value={form.gender} onChangeText={(v: string) => set('gender', v)} />
       </Card>
-      <Card><Text style={{ fontWeight: '900', fontSize: 18, marginBottom: 14 }}>Endereço e contato</Text>
-        {['cep','address','number','complement','district','city','state','phone','email'].map(k => <Input key={k} label={({cep:'CEP',address:'Endereço',number:'Número',complement:'Complemento',district:'Bairro',city:'Cidade',state:'Estado',phone:'Telefone',email:'Email'} as any)[k]} value={(form as any)[k]} onChangeText={(v:string)=>set(k,v)} />)}
+
+      <Card>
+        <Text style={{ fontWeight: '900', fontSize: 18, marginBottom: 14 }}>
+          Endereço e contato
+        </Text>
+        {[
+          'cep',
+          'address',
+          'number',
+          'complement',
+          'district',
+          'city',
+          'state',
+          'phone',
+          'email',
+        ].map((k) => (
+          <Input
+            key={k}
+            label={
+              ({
+                cep: 'CEP',
+                address: 'Endereço',
+                number: 'Número',
+                complement: 'Complemento',
+                district: 'Bairro',
+                city: 'Cidade',
+                state: 'Estado',
+                phone: 'Telefone',
+                email: 'Email',
+              } as any)[k]
+            }
+            value={(form as any)[k]}
+            onChangeText={(v: string) => set(k, v)}
+          />
+        ))}
       </Card>
-      <Card><Text style={{ fontWeight: '900', fontSize: 18, marginBottom: 14 }}>Detalhes esportivos</Text>
-        <Input label="Esporte" value={form.sport} onChangeText={(v:string)=>set('sport',v)} />
-        <Input label="Nível" value={form.level} onChangeText={(v:string)=>set('level',v)} />
-        <Input label="Equipe" value={form.team} onChangeText={(v:string)=>set('team',v)} />
-        <Input label="Senha de acesso" value={form.password} onChangeText={(v:string)=>set('password',v)} secureTextEntry />
+
+      <Card>
+        <Text style={{ fontWeight: '900', fontSize: 18, marginBottom: 14 }}>
+          Detalhes esportivos
+        </Text>
+        <Input label="Esporte" value={form.sport} onChangeText={(v: string) => set('sport', v)} />
+        <Input label="Nível" value={form.level} onChangeText={(v: string) => set('level', v)} />
+        <Input label="Equipe" value={form.team} onChangeText={(v: string) => set('team', v)} />
+        <Input
+          label="Senha de acesso"
+          value={form.password}
+          onChangeText={(v: string) => set('password', v)}
+          secureTextEntry
+        />
       </Card>
+
       <Button title="Finalizar Cadastro" onPress={submit} />
       <Button title="Voltar" variant="secondary" onPress={() => navigation.goBack()} />
     </Screen>

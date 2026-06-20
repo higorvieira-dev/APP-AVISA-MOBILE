@@ -2,6 +2,7 @@
   "expo": {
     "name": "AvisaAPP Mobile",
     "slug": "avisaapp-mobile",
+    "newArchEnabled": false,
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -22,6 +23,9 @@
         "projectId": "0f4808e2-99dd-458c-aabc-853bf3234fef"
       }
     },
-    "plugins": []
+    "plugins": [
+      "expo-font",
+      "expo-asset"
+    ]
   }
 }

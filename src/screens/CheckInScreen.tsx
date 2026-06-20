@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
+
 import colors from "../theme/colors";
 import { Screen, Card, Pill } from "../components/Layout";
 import { Button } from "../components/Fields";
@@ -345,14 +346,52 @@ export default function CheckInScreen() {
     );
   }
 
+  async function registerClassAttendance(eventId: string) {
+    if (!user) {
+      Alert.alert("Login necessário", "Entre no app para registrar presença.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("attendance")
+      .insert({
+        event_id: eventId,
+        athlete_id: user.id,
+      });
+
+    if (error && error.code === "23505") {
+      Alert.alert("Presença já registrada", "Você já realizou check-in nesta aula.");
+      return;
+    }
+
+    if (error) {
+      console.log("[ATTENDANCE INSERT ERROR]", error);
+      Alert.alert("Erro", "Não foi possível registrar presença.");
+      return;
+    }
+
+    Alert.alert("Presença confirmada", "Sua presença foi registrada com sucesso.");
+  }
+
   async function handleQrValue(rawValue: string) {
     if (processing) return;
 
-    try {
-      setProcessing(true);
-      setScannerActive(false);
+    setProcessing(true);
+    setScannerActive(false);
 
+    try {
       const value = rawValue.trim();
+
+      try {
+        const payload = JSON.parse(value);
+
+        if (payload?.eventId) {
+          await registerClassAttendance(String(payload.eventId));
+          return;
+        }
+      } catch {
+        // Não é QR de aula. Continua para o fluxo de academia.
+      }
 
       const { data: locations, error } = await supabase
         .from("training_locations")
@@ -416,7 +455,9 @@ export default function CheckInScreen() {
 
         <View style={styles.scannerOverlay}>
           <Text style={styles.scannerTitle}>Leia o QR Code</Text>
-          <Text style={styles.scannerText}>Use o QR Code de entrada para iniciar e o de saída para finalizar.</Text>
+          <Text style={styles.scannerText}>
+            Use o QR Code da aula para registrar presença ou o QR Code da academia para iniciar/finalizar treino.
+          </Text>
 
           <Pressable style={styles.closeScanner} onPress={() => setScannerActive(false)}>
             <Text style={styles.closeScannerText}>Cancelar</Text>
@@ -435,7 +476,9 @@ export default function CheckInScreen() {
 
         <Text style={styles.title}>Check-in por QR Code</Text>
 
-        <Text style={styles.subtitle}>Leia o QR Code da academia para iniciar ou finalizar sua sessão de treino.</Text>
+        <Text style={styles.subtitle}>
+          Leia o QR Code da aula para registrar presença ou o QR Code da academia para controlar sua sessão de treino.
+        </Text>
 
         {activeSession ? (
           <View style={styles.activeBox}>
@@ -457,8 +500,8 @@ export default function CheckInScreen() {
 
       <Card>
         <Text style={styles.infoTitle}>Como funciona</Text>
-        <Text style={styles.infoText}>1. Leia o QR Code de entrada ao chegar.</Text>
-        <Text style={styles.infoText}>2. O app valida se você está dentro do raio da academia.</Text>
+        <Text style={styles.infoText}>1. Leia o QR Code da aula para confirmar presença.</Text>
+        <Text style={styles.infoText}>2. Leia o QR Code de entrada da academia para iniciar uma sessão de treino.</Text>
         <Text style={styles.infoText}>3. Leia o QR Code de saída ao terminar.</Text>
         <Text style={styles.infoText}>4. Se sair do raio sem ler a saída, a sessão é finalizada automaticamente.</Text>
       </Card>

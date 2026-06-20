@@ -40,6 +40,11 @@ type AgendaItem = {
   time: string;
   location: string;
   createdBy?: string;
+  professorId?: string | null;
+  status?: "pendente" | "agendado" | "em_andamento" | "finalizado" | string;
+  checkinAt?: string | null;
+  checkoutAt?: string | null;
+  hoursCalculated?: number;
 };
 type Post = {
   id: string;
@@ -112,11 +117,19 @@ type MeetingSuggestion = {
   priority: string;
   status: string;
 };
+type Instructor = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+};
+
 
 type AppState = {
   user: User | null;
   users: User[];
   agenda: AgendaItem[];
+  instructors: Instructor[];
   posts: Post[];
   reports: Report[];
   transparencies: Transparency[];
@@ -131,7 +144,10 @@ registerAthlete: (
   data: Partial<User> & { name: string; email: string; password: string }
 ) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
-  addAgenda: (item: Omit<AgendaItem, "id">) => Promise<void>;
+  loadInstructors: () => Promise<void>;
+  addAgenda: (item: Omit<AgendaItem, "id" | "status" | "checkinAt" | "checkoutAt" | "hoursCalculated"> & { professorId?: string | null }) => Promise<void>;
+  startTrainingCheckIn: (agendaId: string) => Promise<void>;
+  finishTrainingCheckOut: (agendaId: string) => Promise<void>;
   addPost: (caption: string, image?: string) => Promise<void>;
   deletePost: (id: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
@@ -271,10 +287,72 @@ function finalPrice(product: StoreProduct) {
   );
 }
 
+
+function formatDateToPostgres(value?: string | null) {
+  if (!value) return null;
+
+  const clean = value.trim().replace(/\//g, '-');
+
+  if (!clean) return null;
+
+  const parts = clean.split('-');
+
+  if (parts.length !== 3) return null;
+
+  const [first, second, third] = parts;
+
+  if (first.length === 4) {
+    return `${first}-${second.padStart(2, '0')}-${third.padStart(2, '0')}`;
+  }
+
+  if (third.length === 4) {
+    return `${third}-${second.padStart(2, '0')}-${first.padStart(2, '0')}`;
+  }
+
+  return null;
+}
+
+function normalizeCargo(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function roleFromCargo(value?: string | null): UserRole {
+  const cargo = normalizeCargo(value);
+
+  if (cargo === "diretor" || cargo === "director") {
+    return "director";
+  }
+
+  if (cargo === "gerente" || cargo === "manager") {
+    return "manager";
+  }
+
+  if (cargo === "supervisor") {
+    return "supervisor";
+  }
+
+  if (
+    cargo === "professor" ||
+    cargo === "orientador" ||
+    cargo === "coordenador" ||
+    cargo === "instrutor" ||
+    cargo === "coach"
+  ) {
+    return "coach";
+  }
+
+  return "athlete";
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = useState(initialUsers);
   const [user, setUser] = useState<User | null>(null);
   const [agenda, setAgenda] = useState<AgendaItem[]>([]);
+  const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
@@ -462,11 +540,103 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setProducts(mappedProducts);
   }
 
+  async function loadAgendaEvents(currentUser: User) {
+    let query = supabase
+      .from("events")
+      .select("id,titulo,tipo,local,data_evento,hora_inicio,criado_por,aprovado,created_at,professor_id,status,checkin_at,checkout_at,horas_calculadas")
+      .order("data_evento", { ascending: true })
+      .order("hora_inicio", { ascending: true });
+
+    if (currentUser.role === "athlete") {
+      query = query.or(`aprovado.eq.true,criado_por.eq.${currentUser.id}`);
+    }
+
+    if (currentUser.role === "coach") {
+      query = query.or(`professor_id.eq.${currentUser.id},criado_por.eq.${currentUser.id}`);
+    }
+
+    const { data: eventRows, error: agendaError } = await query;
+
+    if (agendaError) {
+      console.log("[AGENDA LOAD ERROR]", agendaError);
+      return;
+    }
+
+    const mappedAgenda: AgendaItem[] = (eventRows || []).map((event) => ({
+      id: event.id,
+      title: event.titulo || "Evento",
+      type:
+        event.tipo === "evento"
+          ? "Evento"
+          : event.tipo === "reunião" || event.tipo === "reuniao"
+            ? "Reunião"
+            : "Treino",
+      date: event.data_evento || "",
+      time: event.hora_inicio || "",
+      location: event.local || "",
+      createdBy: event.criado_por || undefined,
+      professorId: event.professor_id || null,
+      status: event.status || "agendado",
+      checkinAt: event.checkin_at || null,
+      checkoutAt: event.checkout_at || null,
+      hoursCalculated: Number(event.horas_calculadas || 0),
+    }));
+
+    setAgenda(mappedAgenda);
+  }
+
+  async function loadInstructors() {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id,nome,email,cargo,ativo")
+      .order("nome", { ascending: true });
+
+    if (error) {
+      console.log("[INSTRUCTORS LOAD ERROR]", error);
+      setInstructors([]);
+      return;
+    }
+
+    const allowedRoles = ["professor", "orientador", "coordenador", "instrutor"];
+
+    const mappedInstructors: Instructor[] = (data || [])
+      .filter((item) => {
+        const role = normalizeCargo(item.cargo);
+        const isActive = item.ativo === true || item.ativo === null || item.ativo === undefined;
+
+        return allowedRoles.includes(role) && isActive;
+      })
+      .map((item) => ({
+        id: item.id,
+        name: item.nome || item.email || "Instrutor APPAVISA",
+        email: item.email || "",
+        role: normalizeCargo(item.cargo) || "professor",
+      }));
+
+    console.log("[INSTRUCTORS LOADED]", mappedInstructors);
+
+    setInstructors(mappedInstructors);
+  }
+
+  function diffHours(startIso?: string | null, endIso?: string | null) {
+    if (!startIso || !endIso) return 0;
+
+    const start = new Date(startIso).getTime();
+    const end = new Date(endIso).getTime();
+
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 0;
+
+    return Math.round(((end - start) / 1000 / 60 / 60) * 100) / 100;
+  }
+
+
+
   const api = useMemo<AppState>(
     () => ({
       user,
       users,
       agenda,
+      instructors,
       posts,
       reports,
       transparencies,
@@ -503,7 +673,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           .select(
             "id,nome,email,cargo,foto_url,telefone,data_nascimento,esporte,equipe,ativo,horas_total,coins",
           )
-          .eq("email", normalizedEmail)
+          .eq("id", data.user.id)
           .limit(1);
 
         console.log("[APPAVISA LOGIN] Profiles retornados:", profiles);
@@ -536,22 +706,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
 
+        const profileCargo = normalizeCargo(profile.cargo);
+
+        console.log("[APPAVISA LOGIN] Cargo bruto:", profile.cargo);
+        console.log("[APPAVISA LOGIN] Cargo normalizado:", profileCargo);
+
         const loggedUser: User = {
           id: profile.id,
           name: profile.nome || "Usuário APPAVISA",
           email: profile.email || normalizedEmail,
           password: "",
-          role:
-            profile.cargo === "diretor"
-              ? "director"
-              : profile.cargo === "gerente"
-                ? "manager"
-                : profile.cargo === "supervisor"
-                  ? "supervisor"
-                  : profile.cargo === "professor" ||
-                      profile.cargo === "orientador"
-                    ? "coach"
-                    : "athlete",
+          role: roleFromCargo(profileCargo),
           coins: Number(profile.coins || 0),
           hours: Number(profile.horas_total || 0),
           warnings: 0,
@@ -564,8 +729,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
 
         setUser(loggedUser);
+        await loadAgendaEvents(loggedUser);
         await loadGalleryPosts();
         await loadStoreProducts();
+        await loadInstructors();
         //await registerForPushNotifications(loggedUser.id);
         return true;
       },
@@ -610,7 +777,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           email: normalizedEmail,
           cargo: "atleta",
           telefone: data.phone || null,
-          data_nascimento: data.birth || null,
+          data_nascimento: formatDateToPostgres(data.birth),
           esporte: data.sport || data.modality || null,
           equipe: data.team || null,
           coins: 0,
@@ -651,7 +818,7 @@ O usuário foi criado no Auth, mas o perfil não foi salvo. Verifique as policie
     .update({
       nome: data.name || user.name,
       telefone: data.phone && data.phone.trim() !== "" ? data.phone : null,
-      data_nascimento: data.birth && data.birth.trim() !== "" ? data.birth : null,
+      data_nascimento: formatDateToPostgres(data.birth),
       esporte: data.sport || data.modality || null,
       equipe: data.team && data.team.trim() !== "" ? data.team : null,
       foto_url: data.profileImage || null,
@@ -687,6 +854,9 @@ O usuário foi criado no Auth, mas o perfil não foi salvo. Verifique as policie
     "Perfil atualizado no Supabase."
   );
 },
+      async loadInstructors() {
+        await loadInstructors();
+      },
      async addAgenda(item) {
   if (!user) return;
 
@@ -697,10 +867,15 @@ O usuário foi criado no Auth, mas o perfil não foi salvo. Verifique as policie
       descricao: `${item.type} criado pelo app`,
       tipo: item.type.toLowerCase(),
       local: item.location || null,
-      data_evento: item.date,
+      data_evento: formatDateToPostgres(item.date) || item.date,
       hora_inicio: item.time,
       hora_fim: null,
       criado_por: user.id,
+      professor_id: item.professorId || (user.role === "coach" ? user.id : null),
+      status: "agendado",
+      checkin_at: null,
+      checkout_at: null,
+      horas_calculadas: 0,
       aprovado: user.role === "athlete" ? false : true,
     })
     .select("*")
@@ -725,6 +900,11 @@ O usuário foi criado no Auth, mas o perfil não foi salvo. Verifique as policie
     time: data.hora_inicio,
     location: data.local || "",
     createdBy: user.name,
+    professorId: data.professor_id || null,
+    status: data.status || "agendado",
+    checkinAt: data.checkin_at || null,
+    checkoutAt: data.checkout_at || null,
+    hoursCalculated: Number(data.horas_calculadas || 0),
   };
 
   setAgenda((prev) => [ag, ...prev]);
@@ -738,6 +918,118 @@ O usuário foi criado no Auth, mas o perfil não foi salvo. Verifique as policie
 
   Alert.alert("Sucesso", "Evento salvo na agenda.");
 },
+      async startTrainingCheckIn(agendaId) {
+        if (!user) return;
+
+        const target = agenda.find((item) => item.id === agendaId);
+
+        if (!target) {
+          Alert.alert("Agenda não encontrada", "Não foi possível localizar este treino.");
+          return;
+        }
+
+        if (target.professorId && target.professorId !== user.id && user.role === "coach") {
+          Alert.alert("Acesso negado", "Este treino não está vinculado ao seu perfil.");
+          return;
+        }
+
+        const now = new Date().toISOString();
+
+        const { error } = await supabase
+          .from("events")
+          .update({
+            status: "em_andamento",
+            checkin_at: now,
+          })
+          .eq("id", agendaId);
+
+        if (error) {
+          console.log("[TRAINING CHECKIN ERROR]", error);
+          Alert.alert("Erro", "Não foi possível iniciar o check-in automático.");
+          return;
+        }
+
+        setAgenda((prev) =>
+          prev.map((item) =>
+            item.id === agendaId
+              ? { ...item, status: "em_andamento", checkinAt: now }
+              : item,
+          ),
+        );
+
+        Alert.alert("Check-in iniciado", "A contagem de horas foi iniciada.");
+      },
+      async finishTrainingCheckOut(agendaId) {
+        if (!user) return;
+
+        const target = agenda.find((item) => item.id === agendaId);
+
+        if (!target) {
+          Alert.alert("Agenda não encontrada", "Não foi possível localizar este treino.");
+          return;
+        }
+
+        if (!target.checkinAt) {
+          Alert.alert("Check-in obrigatório", "Inicie o check-in antes de encerrar a aula.");
+          return;
+        }
+
+        const now = new Date().toISOString();
+        const calculatedHours = diffHours(target.checkinAt, now);
+        const newTotalHours = Math.round(((user.hours || 0) + calculatedHours) * 100) / 100;
+
+        const { error: eventError } = await supabase
+          .from("events")
+          .update({
+            status: "finalizado",
+            checkout_at: now,
+            horas_calculadas: calculatedHours,
+          })
+          .eq("id", agendaId);
+
+        if (eventError) {
+          console.log("[TRAINING CHECKOUT EVENT ERROR]", eventError);
+          Alert.alert("Erro", "Não foi possível finalizar a aula.");
+          return;
+        }
+
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ horas_total: newTotalHours })
+          .eq("id", user.id);
+
+        if (profileError) {
+          console.log("[TRAINING CHECKOUT PROFILE ERROR]", profileError);
+          Alert.alert("Aula finalizada parcialmente", "A aula foi encerrada, mas não foi possível somar as horas no perfil.");
+          return;
+        }
+
+        const updatedUser = { ...user, hours: newTotalHours };
+        setUser(updatedUser);
+        setUsers((prev) => prev.map((item) => (item.id === user.id ? updatedUser : item)));
+
+        setAgenda((prev) =>
+          prev.map((item) =>
+            item.id === agendaId
+              ? {
+                  ...item,
+                  status: "finalizado",
+                  checkoutAt: now,
+                  hoursCalculated: calculatedHours,
+                }
+              : item,
+          ),
+        );
+
+        pushHistory(user.id, {
+          type: "atividade",
+          title: target.title,
+          description: `Aula finalizada. Horas contabilizadas: ${calculatedHours}h`,
+          status: "Finalizado",
+        });
+
+        Alert.alert("Aula finalizada", `Foram contabilizadas ${calculatedHours}h no seu perfil.`);
+      },
       async addPost(caption, image) {
         if (!user) return;
 
@@ -1366,6 +1658,7 @@ O usuário foi criado no Auth, mas o perfil não foi salvo. Verifique as policie
       user,
       users,
       agenda,
+      instructors,
       posts,
       reports,
       transparencies,
